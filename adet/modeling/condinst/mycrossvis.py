@@ -19,6 +19,7 @@ from adet.utils.comm import aligned_bilinear
 
 from .dynamic_mask_head import build_dynamic_mask_head
 from .mask_branch import build_mask_branch
+from .embeddingloss import build_emd
 
 __all__ = ['CrossVIS']
 
@@ -102,6 +103,7 @@ class CrossVIS(nn.Module):
         self.proposal_generator = build_proposal_generator(
             cfg, self.backbone.output_shape())
         self.mask_head = build_dynamic_mask_head(cfg)
+        self.emd_head =build_emd()
         self.mask_branch = build_mask_branch(cfg, self.backbone.output_shape())
 
         self.mask_out_stride = cfg.MODEL.CONDINST.MASK_OUT_STRIDE
@@ -208,11 +210,12 @@ class CrossVIS(nn.Module):
 
             
         gt_final = total_gt(gt_instances_0,gt_instances_1)
-        
         mask_feats_0, sem_losses_0 = self.mask_branch(features_0,
                                                       gt_instances_0)
         mask_feats_1, sem_losses_1 = self.mask_branch(features_1,
                                                       gt_instances_1)
+
+        emd_loss = self.emd_head(mask_feats_0,mask_feats_1,gt_final)
 
         proposals_0, proposal_losses_0 = self.proposal_generator(
             images_norm_0, features_0, gt_instances_0, self.controller)
