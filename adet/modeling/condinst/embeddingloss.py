@@ -2,11 +2,11 @@
 import torch
 from torch import nn
 from torch.nn import functional as F
-from _lovasz import LovaszHingeLoss
+from ._lovasz import LovaszHingeLoss
 
 
-def build_emd(cfg):
-    return EMDHead(cfg)
+def build_emd():
+    return EMDHead()
 
 
 class EMDHead(nn.Module):
@@ -49,6 +49,8 @@ class EMDHead(nn.Module):
             for idx, (embeddings_per_seq, targets_per_seq) in enumerate(zip(embedding_map,gt_final)):
 
               masks = targets_per_seq.clone()
+              masks = masks.to(torch.device('cuda:0'))
+
               if masks.numel() == 0:
                 continue
               nonzero_mask_pts = masks.nonzero(as_tuple=False)
@@ -75,8 +77,10 @@ class EMDHead(nn.Module):
                 instance_target = masks[n].flatten()
                 if instance_target.sum(dtype=torch.long) == 0:
                     continue
-            
-                lovasz_loss = lovasz_loss + lovasz_hinge_loss(logits_map.flatten(), instance_target)
+                g = lovasz_hinge_loss(logits_map.flatten(), instance_target)
+                if torch.isnan(g)==False:
+                  lovasz_loss = lovasz_loss + g
+
             
             if total_instances == 0:
               lovasz_loss = (embedding_map.sum()) * 0
@@ -84,6 +88,6 @@ class EMDHead(nn.Module):
                 # compute weighted sum of lovasz and variance losses based on number of instances per batch sample
                 lovasz_loss = lovasz_loss / total_instances
                  
-            losses['embedding_loss'] = lovasz_loss
-            return losses
+            
+            return lovasz_loss
 
