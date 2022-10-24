@@ -217,6 +217,7 @@ class CrossVIS(nn.Module):
 
         emd_loss = self.emd_head(mask_feats_0,mask_feats_1,gt_final)
 
+        #print('emd_loss',emd_loss)
         proposals_0, proposal_losses_0 = self.proposal_generator(
             images_norm_0, features_0, gt_instances_0, self.controller)
         proposals_1, proposal_losses_1 = self.proposal_generator(
@@ -275,7 +276,8 @@ class CrossVIS(nn.Module):
 
         losses.update({'loss_cross_over': loss_cross_over})
         losses.update({'loss_reid': loss_reid})
-
+        losses.update({'loss_embedding': emd_loss})
+        
         return losses
 
     def cross_over(self, proposals_0, proposals_1, mask_feats_0, mask_feats_1,
