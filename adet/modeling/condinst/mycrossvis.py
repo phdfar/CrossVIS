@@ -88,6 +88,7 @@ def total_gt(gt0,gt1):
     y = tempb.unsqueeze(1)
     gt = torch.cat((x,y),dim=1)
     gtn = F.interpolate(gt,size=(48,80),mode='nearest')
+    gtn = gtn.to(torch.device('cuda:0'))
     gt_final.append(gtn)
   return gt_final
 
