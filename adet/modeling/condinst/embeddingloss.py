@@ -46,10 +46,12 @@ class EMDHead(nn.Module):
             total_instances = 0;
             lovasz_loss = 0.
             losses = {}
-            for idx, (embeddings_per_seq, targets_per_seq) in enumerate(zip(embedding_map,gt_final)):
+            import os
+            os.environ['CUDA_LAUNCH_BLOCKING'] = "1"
 
-              masks = targets_per_seq.clone()
-              masks = masks.to(torch.device('cuda:0'))
+            for idx, (embeddings_per_seq, masks) in enumerate(zip(embedding_map,gt_final)):
+
+              #masks = targets_per_seq.clone()
 
               if masks.numel() == 0:
                 continue
@@ -75,9 +77,12 @@ class EMDHead(nn.Module):
                 probs_map = self.compute_prob_map(embeddings_per_seq, instance_embeddings[n])
                 logits_map = (probs_map * 2.) - 1.
                 instance_target = masks[n].flatten()
+                
                 if instance_target.sum(dtype=torch.long) == 0:
                     continue
+
                 g = lovasz_hinge_loss(logits_map.flatten(), instance_target)
+                #if g * 0 !=0
                 if torch.isnan(g)==False:
                   lovasz_loss = lovasz_loss + g
 
