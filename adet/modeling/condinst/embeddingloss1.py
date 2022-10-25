@@ -2,7 +2,7 @@ import torch
 from torch import nn
 from torch.nn import functional as F
 from ._lovasz import LovaszHingeLoss
-from embedding_utils import add_spatiotemporal_offset
+from .embedding_utils import add_spatiotemporal_offset
 
 def build_emd():
     return EMDHead()
