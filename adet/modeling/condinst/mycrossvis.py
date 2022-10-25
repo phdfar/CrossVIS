@@ -25,6 +25,8 @@ __all__ = ['CrossVIS']
 
 logger = logging.getLogger(__name__)
 
+global cp
+cp=0;
 
 def unfold_wo_center(x, kernel_size, dilation):
     assert x.dim() == 4
@@ -88,7 +90,7 @@ def total_gt(gt0,gt1):
     y = tempb.unsqueeze(1)
     gt = torch.cat((x,y),dim=1)
     gtn = F.interpolate(gt,size=(48,80),mode='nearest')
-    gtn = gtn.to(torch.device('cuda:0'))
+    gtn = gtn.to(torch.device('cpu'))
     gt_final.append(gtn)
   return gt_final
 
@@ -154,12 +156,26 @@ class CrossVIS(nn.Module):
 
     def forward_train(self, batched_inputs):
         assert self.training
+        global cp
+
         original_images_0 = [
             x[0]['image'].to(self.device) for x in batched_inputs
         ]
         original_images_1 = [
             x[1]['image'].to(self.device) for x in batched_inputs
         ]
+
+        """
+        import time        
+        import cv2
+        import numpy as np
+        for i in range(len(original_images_0)):
+          img0 = torch.permute(original_images_0[i],(1,2,0)).detach().cpu().numpy()
+          img1 = torch.permute(original_images_1[i],(1,2,0)).detach().cpu().numpy()
+          millisec = time.time() * 1000
+          y = np.concatenate((img0,img1),axis=1)
+          cv2.imwrite('/content/img/'+str(millisec)+'.png',y)
+        """
 
         # normalize images
         images_norm_0 = [self.normalizer(x) for x in original_images_0]
@@ -216,7 +232,9 @@ class CrossVIS(nn.Module):
         mask_feats_1, sem_losses_1 = self.mask_branch(features_1,
                                                       gt_instances_1)
 
-        emd_loss = self.emd_head(mask_feats_0,mask_feats_1,gt_final)
+        xmask_feats_1 = mask_feats_0.to(torch.device('cpu'))
+        xmask_feats_2 = mask_feats_1.to(torch.device('cpu'))
+
 
         #print('emd_loss',emd_loss)
         proposals_0, proposal_losses_0 = self.proposal_generator(
@@ -262,6 +280,17 @@ class CrossVIS(nn.Module):
             alpha=0.25,
             gamma=2.,
             reduction='sum') / reid_output.size(0)
+
+        xmask_feats_1 = mask_feats_0.to(torch.device('cpu'))
+        xmask_feats_2 = mask_feats_1.to(torch.device('cpu'))
+
+        try:
+          emd_loss = self.emd_head(xmask_feats_1,xmask_feats_2,gt_final)
+          cp = emd_loss.clone()
+        except:
+          print('XXXXXXXXXXXXXXXXXXXXxxx')
+          emd_loss = loss_reid/100
+          pass
 
         losses, losses_0, losses_1 = {}, {}, {}
         losses_0.update(sem_losses_0)
