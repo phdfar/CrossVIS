@@ -26,7 +26,7 @@ def get_nb_free_dims(mode):
 
 
 @torch.no_grad()
-def creat_spatiotemporal_grid(height, width, time, t_scale, dtype=torch.float32, device="cpu"):
+def creat_spatiotemporal_grid(height, width, time, t_scale, dtype=torch.float32, device="cuda:0"):
     # returns [tx, ty, txy, y, x]
     x_abs = max(1., width / float(height))
     y_abs = max(1., height / float(width))
@@ -41,10 +41,17 @@ def creat_spatiotemporal_grid(height, width, time, t_scale, dtype=torch.float32,
     return t, y, x
 
 
-def add_spatiotemporal_offset(embeddings, time_scale, mode):
+def add_spatiotemporal_offset(embeddings, time_scale):
     N, C, T, H, W = embeddings.shape
     t, y, x = creat_spatiotemporal_grid(H, W, T, time_scale, embeddings.dtype, embeddings.device)
 
+    with torch.no_grad():
+        zeros = torch.zeros_like(x)
+        grid = torch.stack((t, y, x, zeros,zeros,zeros,zeros,zeros), dim=0)
+        grid = grid.unsqueeze(0).expand(N, -1, -1, -1, -1)  # [N, 8, T, H, W]
+    
+    return embeddings + grid.detach()
+    """
     if mode == "x":
         with torch.no_grad():
             grid = x.unsqueeze(0)
@@ -118,3 +125,4 @@ def add_spatiotemporal_offset(embeddings, time_scale, mode):
 
     else:
         raise ValueError("Invalid experimental embedding mode: {}".format(mode))
+    """
