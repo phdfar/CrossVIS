@@ -33,22 +33,28 @@ class EMDHead(nn.Module):
     
 
     def __call__(self,mask_feats_1,mask_feats_2,gt_final):
+        import random
+        index = random.randint(1,555)
         
+
         if self.training:
             self._iter += 1
-            
+
+
             x = mask_feats_1.unsqueeze(2)
             y = mask_feats_2.unsqueeze(2)
             embedding_map = torch.cat((x,y),dim=2)
             embedding_map = embedding_map.permute(0, 2, 3, 4, 1)  # [N, T, H, W, C]
-
+            #sig = torch.nn.Sigmoid()
+            #embedding_map = torch.nn.functional.relu(embedding_map)
+            #embedding_map = sig(embedding_map)
             lovasz_hinge_loss = LovaszHingeLoss()
             total_instances = 0;
             lovasz_loss = 0.
             losses = {}
             import os
             os.environ['CUDA_LAUNCH_BLOCKING'] = "1"
-
+            #print('start batch')
             for idx, (embeddings_per_seq, masks) in enumerate(zip(embedding_map,gt_final)):
 
               #masks = targets_per_seq.clone()
@@ -77,22 +83,20 @@ class EMDHead(nn.Module):
                 probs_map = self.compute_prob_map(embeddings_per_seq, instance_embeddings[n])
                 logits_map = (probs_map * 2.) - 1.
                 instance_target = masks[n].flatten()
-                
-                if instance_target.sum(dtype=torch.long) == 0:
-                    continue
 
+                if instance_target.sum(dtype=torch.long) == 0:
+                  continue
+               
                 g = lovasz_hinge_loss(logits_map.flatten(), instance_target)
-                #if g * 0 !=0
                 if torch.isnan(g)==False:
                   lovasz_loss = lovasz_loss + g
 
-            
             if total_instances == 0:
               lovasz_loss = (embedding_map.sum()) * 0
             else:
                 # compute weighted sum of lovasz and variance losses based on number of instances per batch sample
                 lovasz_loss = lovasz_loss / total_instances
-                 
-            
+           
+
             return lovasz_loss
 
