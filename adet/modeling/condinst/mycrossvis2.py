@@ -387,16 +387,25 @@ class CrossVIS(nn.Module):
         return (loss_mask_cross_over_0 + loss_mask_cross_over_1) * .5
 
     def forward_test(self, batched_inputs):
-        x2 = batched_inputs[0][3:,:,:]; x = batched_inputs[0][:3,:,:];
-        batched_inputs=[]; batched_inputs.append(x);batched_inputs.append(x2);
-        
-        original_images = [x['image'].to(self.device) for x in batched_inputs]
 
-        # normalize images
+        for x in batched_inputs:
+          
+          a,b = torch.split(x['image'],3,dim=0)
+
+        batched_inputs1=[];batched_inputs2=[];
+        batched_inputs1.append(a)
+        batched_inputs2.append(b)
+
+        original_images = [x.to(self.device) for x in batched_inputs2]
         images_norm = [self.normalizer(x) for x in original_images]
-        images_norm = ImageList.from_tensors(images_norm,
-                                             self.backbone.size_divisibility)
+        images_norm = ImageList.from_tensors(images_norm,self.backbone.size_divisibility)
+        features2 = self.backbone(images_norm.tensor)
+        mask_feats_2, sem_losses_2 = self.mask_branch(features2,None)
 
+
+        original_images = [x.to(self.device) for x in batched_inputs1]
+        images_norm = [self.normalizer(x) for x in original_images]
+        images_norm = ImageList.from_tensors(images_norm,self.backbone.size_divisibility)
         features = self.backbone(images_norm.tensor)
 
         if 'instances' in batched_inputs[0]:
@@ -435,6 +444,18 @@ class CrossVIS(nn.Module):
             gt_instances = None
 
         mask_feats, sem_losses = self.mask_branch(features, gt_instances)
+        x = mask_feats.unsqueeze(2)
+        y = mask_feats_2.unsqueeze(2)
+        z = torch.cat((x,y),dim=2)
+
+        z = self.conv_3d_1(z)
+        z = self.conv_3d_2(z)
+        z = self.conv_3d_3(z)
+        z = self.conv_3d_4(z)
+        z = self.max_3d(z)
+        z = z.squeeze(2)
+        mask_feats = mask_feats + z
+
 
         proposals, proposal_losses = self.proposal_generator(
             images_norm, features, gt_instances, self.controller)
