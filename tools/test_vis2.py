@@ -159,7 +159,13 @@ if __name__ == '__main__':
         video_name = video['file_names'][0].split('/')[0]
 
         for index in range(len(images)):
-            predictions = demo(images[index])[0]['instances']
+            try:
+                a = images[index] ; b = images[index+1]
+                t = np.concatenate((a,b))
+            except:
+                a = images[index] ; b = images[index-1]
+                t = np.concatenate((a,b))
+            predictions = demo(t)[0]['instances']
             predictions_num = len(predictions)
             pred_insts = []
             if predictions_num == 0:
