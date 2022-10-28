@@ -153,7 +153,7 @@ if __name__ == '__main__':
     for video in tqdm(data['videos']):
         memory = dict()
         images = [
-            read_image(osp.join('datasets/youtubevis/valid', image_name),
+            read_image(osp.join('/kaggle/input/valid-vis/valid/JPEGImages', image_name),
                        'BGR') for image_name in video['file_names']
         ]
         video_name = video['file_names'][0].split('/')[0]
