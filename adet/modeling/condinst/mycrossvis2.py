@@ -387,6 +387,9 @@ class CrossVIS(nn.Module):
         return (loss_mask_cross_over_0 + loss_mask_cross_over_1) * .5
 
     def forward_test(self, batched_inputs):
+        x2 = batched_inputs[0][3:,:,:]; x = batched_inputs[0][:3,:,:];
+        batched_inputs=[]; batched_inputs.append(x);batched_inputs.append(x2);
+        
         original_images = [x['image'].to(self.device) for x in batched_inputs]
 
         # normalize images
