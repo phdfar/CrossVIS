@@ -161,10 +161,12 @@ if __name__ == '__main__':
         for index in range(len(images)):
             try:
                 a = images[index] ; b = images[index+1]
-                t = np.concatenate((a,b))
+                #t = np.concatenate((a,b))
+                t = torch.cat(a,b)
             except:
                 a = images[index] ; b = images[index-1]
-                t = np.concatenate((a,b))
+                #t = np.concatenate((a,b))
+                t = torch.cat(a,b)
             predictions = demo(t)[0]['instances']
             predictions_num = len(predictions)
             pred_insts = []
