@@ -216,9 +216,6 @@ def main(args):
             hooks.EvalHook(0,
                            lambda: trainer.test_with_TTA(cfg, trainer.model))
         ])
-    for name, param in trainer.model.named_parameters():
-      if name[0:4]=='back':
-        param.requires_grad = False
         
     return trainer.train()
 
