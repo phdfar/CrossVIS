@@ -529,13 +529,68 @@ class CrossVIS(nn.Module):
         y = mask_feats_2.unsqueeze(2)
         z = torch.cat((x,y),dim=2)
 
-        z = self.conv_3d_1(z)
-        z = self.conv_3d_2(z)
-        z = self.conv_3d_3(z)
-        z = self.conv_3d_4(z)
-        z = self.max_3d(z)
-        z = z.squeeze(2)
-        mask_feats = mask_feats + z
+         #temporal attention
+        for i in range(0,2):
+          fs = z[:,:,i,:,:]  #[N C H W]
+          fs = self.maxpool(fs)
+          if i==0:
+            fskey = self.fskey_conv(fs) #[N C/4 H W]
+            fsvalue = self.fsvalue_conv(fs) #[N C/4 H W]
+            fskey = fskey.unsqueeze(1)
+            fsvalue = fsvalue.unsqueeze(1)
+
+          else:
+            a = self.fskey_conv(fs) #[N C/4 H W]
+            b = self.fsvalue_conv(fs) #[N C/4 H W]
+            a = a.unsqueeze(1)
+            b = b.unsqueeze(1)
+
+            fskey = torch.cat((fskey,a),dim=1)
+            fsvalue = torch.cat((fsvalue,b),dim=1)
+
+
+        #fsvalue  #[N T C/4 H W]  
+        #fskey    #[N T C/4 H W]                                
+        C = fskey.size(2); H = fskey.size(3); W = fskey.size(4); T= fskey.size(1);  N= fskey.size(0);
+        fsvalue = torch.permute(fsvalue,(0,2,1,3,4)) #[N c/4 T H W]
+        fsvalue = torch.reshape(fsvalue,(N,C,H*W*T))
+        fskey = torch.permute(fskey,(0,2,1,3,4)) #[N c/4 T H W]
+        fskey = torch.reshape(fskey,(N,C,H*W*T))
+
+       
+        def tempattn(fcx,fskey,fsvalue,C,T,H,W):
+          fc = self.maxpool(fcx)
+          fckey = self.fckey_conv(fc) #[N C/4 H W]
+          fckey = torch.reshape(fckey,(N,C,H*W))
+          #X = torch.tensordot(fskey, fckey, dims=([1], [1]));
+          for j in range(0,N):
+            X = torch.tensordot(fskey[j], fckey[j], dims=([0], [0]));
+            fA = self.softmax_attn(X)
+            fA = torch.reshape(fA,(H*W*T,H,W))
+            fA = torch.tensordot(fsvalue[j], fA, dims=([1], [0]));
+            fA = fA.unsqueeze(0)
+            fA = self.fA_conv(fA) #[1 C H W]
+            if j==0:
+              fAs= fA
+            else:
+              fAs = torch.cat((fAs,fA),dim=0)
+
+          #fA = fA.unsqueeze(0)
+         
+          fA = self.upsample(fAs)
+          ft = (fcx + fA).unsqueeze(2)
+          return ft
+            
+        for i in range(0,2):
+          fc = z[:,:,i,:,:] #[1 C H W]       
+          ft = tempattn(fc,fskey,fsvalue,C,T,H,W)
+          if i==0:
+            ff = ft
+          else:
+            ff = torch.cat((ff,ft),dim=2)
+
+        fcbams0 = self.cbam(mask_feats)
+        mask_feats = ff[:,:,0,:,:] + fcbams0
 
 
         proposals, proposal_losses = self.proposal_generator(
