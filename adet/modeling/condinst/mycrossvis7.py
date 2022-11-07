@@ -13,9 +13,10 @@ from detectron2.structures.masks import PolygonMasks, polygons_to_bitmask
 from fvcore.nn import sigmoid_focal_loss_jit
 from skimage import color
 from torch import nn
-import .opt as opt
+from .opt import getopticalflow
 from adet.utils.comm import aligned_bilinear
-
+import cv2
+import numpy as np
 from .dynamic_mask_head import build_dynamic_mask_head
 from .mask_branch import build_mask_branch
 
@@ -92,15 +93,19 @@ class CrossVIS(nn.Module):
         self.pairwise_dilation = cfg.MODEL.BOXINST.PAIRWISE.DILATION
         self.pairwise_color_thresh = cfg.MODEL.BOXINST.PAIRWISE.COLOR_THRESH
 
+        """
         self.conv_3d_1 = nn.Conv3d(8, 16, (2,3,3),padding='same')
         self.conv_3d_2 = nn.Conv3d(16, 32, (2,3,3),padding='same')
         self.conv_3d_3 = nn.Conv3d(32, 16, (2,3,3),padding='same')
         self.conv_3d_4 = nn.Conv3d(16, 8, (2,3,3),padding='same')
         self.max_3d = nn.MaxPool3d((2, 1, 1))
-        
+        """
+
         self.conv_2d_1 = nn.Conv2d(3, 8, 3,padding='same')
         self.conv_2d_2 = nn.Conv2d(8, 16, 3,padding='same')
         self.conv_2d_3 = nn.Conv2d(16, 8, 3,padding='same')
+        self.conv_2d_5 = nn.Conv2d(16, 8, 3,padding='same')
+
         self.max_2d = nn.MaxPool2d(2)
 
         self.relu = nn.ReLU()
@@ -143,16 +148,22 @@ class CrossVIS(nn.Module):
         
         opticalflow=[]
         for im in batched_inputs:
-            im1 = torch.permute(x[0]['image'],(1,2,0)).detach().numpy().cpu()
+            im1 = torch.permute(im[0]['image'],(1,2,0)).detach().cpu().numpy()
             im1 = cv2.normalize(im1, None, 0, 255, cv2.NORM_MINMAX).astype('uint8')
             gray1 = cv2.cvtColor(im1, cv2.COLOR_BGR2GRAY)
-            im2 = torch.permute(x[1]['image'],(1,2,0)).detach().numpy().cpu()
+            im2 = torch.permute(im[1]['image'],(1,2,0)).detach().cpu().numpy()
             im2 = cv2.normalize(im2, None, 0, 255, cv2.NORM_MINMAX).astype('uint8')
             gray2 = cv2.cvtColor(im2, cv2.COLOR_BGR2GRAY)
-            opticalflow.append(opt.getopticalflow(gray1,gray2))
+            try:
+              z = getopticalflow(gray1,gray2)
+              z = cv2.resize(z, (640,384), interpolation = cv2.INTER_AREA)
+            except:
+              z = np.zeros((384,640))
+            opticalflow.append(z)
             
         opticalflow = torch.tensor(np.asarray(opticalflow)).to(device='cuda:0').float()
-            
+        opticalflow = torch.permute(opticalflow,(0,3,1,2))
+
         original_images_0 = [
             x[0]['image'].to(self.device) for x in batched_inputs
         ]
@@ -226,12 +237,20 @@ class CrossVIS(nn.Module):
         """
         
         
-        z = self.conv_2d_1(opticalflow);z=self.relu(z)
+
+        
+        z = self.conv_2d_1(opticalflow);z=self.relu(z);z = self.max_2d(z)
         z = self.conv_2d_2(z);z=self.relu(z);z = self.max_2d(z)
         z = self.conv_2d_3(z);z=self.relu(z);z = self.max_2d(z)
         
+      
+
         mask_feats_0 = torch.cat((mask_feats_0,z),dim=1)
         mask_feats_1 = torch.cat((mask_feats_1,z),dim=1)
+
+        mask_feats_0 = self.conv_2d_5(mask_feats_0);mask_feats_0=self.relu(mask_feats_0)
+        mask_feats_1 = self.conv_2d_5(mask_feats_1);mask_feats_1=self.relu(mask_feats_1)
+
 
         proposals_0, proposal_losses_0 = self.proposal_generator(
             images_norm_0, features_0, gt_instances_0, self.controller)
