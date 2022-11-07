@@ -124,18 +124,21 @@ def getopticalflow(a,b):
   mask[..., 2] = cv2.normalize(magnitude, None, 0, 255, cv2.NORM_MINMAX)
     
   # Converts HSV to RGB (BGR) color representation
+  
   rgb = cv2.cvtColor(mask, cv2.COLOR_HSV2BGR)
-
+  rgb = adjust_gamma(rgb, gamma=5.0)	
+  """	
   #A = rgb[:,:,2]
   a = adjust_gamma(rgb[:,:,2], gamma=5.0)
   b = adjust_gamma(rgb[:,:,0], gamma=5.0)
+  
   if np.max(a)>0:
     a = a / np.max(a)
   if np.max(b)>0:
     b = b / np.max(b)
-
+  """		
   #plt.imshow(a)
   #plt.figure()
   #plt.imshow(b)
 
-  return a,b
+  return rgb
