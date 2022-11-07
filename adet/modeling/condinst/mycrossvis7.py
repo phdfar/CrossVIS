@@ -13,7 +13,7 @@ from detectron2.structures.masks import PolygonMasks, polygons_to_bitmask
 from fvcore.nn import sigmoid_focal_loss_jit
 from skimage import color
 from torch import nn
-
+import .opt as opt
 from adet.utils.comm import aligned_bilinear
 
 from .dynamic_mask_head import build_dynamic_mask_head
@@ -98,11 +98,11 @@ class CrossVIS(nn.Module):
         self.conv_3d_4 = nn.Conv3d(16, 8, (2,3,3),padding='same')
         self.max_3d = nn.MaxPool3d((2, 1, 1))
         
-        self.conv_2d_1 = nn.Conv2d(8, 16, 3,padding='same')
-        self.conv_2d_2 = nn.Conv2d(16, 32, 3,padding='same')
-        self.conv_2d_3 = nn.Conv2d(32, 16, 3,padding='same')
-        self.conv_2d_4 = nn.Conv2d(16, 8, 3,padding='same')
-        
+        self.conv_2d_1 = nn.Conv2d(3, 8, 3,padding='same')
+        self.conv_2d_2 = nn.Conv2d(8, 16, 3,padding='same')
+        self.conv_2d_3 = nn.Conv2d(16, 8, 3,padding='same')
+        self.max_2d = nn.MaxPool2d(2)
+
         self.relu = nn.ReLU()
 
         # build top module
@@ -140,6 +140,19 @@ class CrossVIS(nn.Module):
 
     def forward_train(self, batched_inputs):
         assert self.training
+        
+        opticalflow=[]
+        for im in batched_inputs:
+            im1 = torch.permute(x[0]['image'],(1,2,0)).detach().numpy().cpu()
+            im1 = cv2.normalize(im1, None, 0, 255, cv2.NORM_MINMAX).astype('uint8')
+            gray1 = cv2.cvtColor(im1, cv2.COLOR_BGR2GRAY)
+            im2 = torch.permute(x[1]['image'],(1,2,0)).detach().numpy().cpu()
+            im2 = cv2.normalize(im2, None, 0, 255, cv2.NORM_MINMAX).astype('uint8')
+            gray2 = cv2.cvtColor(im2, cv2.COLOR_BGR2GRAY)
+            opticalflow.append(opt.getopticalflow(gray1,gray2))
+            
+        opticalflow = torch.tensor(np.asarray(opticalflow)).to(device='cuda:0').float()
+            
         original_images_0 = [
             x[0]['image'].to(self.device) for x in batched_inputs
         ]
@@ -211,12 +224,11 @@ class CrossVIS(nn.Module):
         z = self.max_3d(z)
         z = z.squeeze(2)
         """
-        z = mask_feats_0 - mask_feats_1
-        z = self.conv_2d_1(z);z=self.relu(z)
-        z = self.conv_2d_2(z);z=self.relu(z)
-        z = self.conv_2d_3(z);z=self.relu(z)
-        z = self.conv_2d_4(z);z=self.relu(z)
         
+        
+        z = self.conv_2d_1(opticalflow);z=self.relu(z)
+        z = self.conv_2d_2(z);z=self.relu(z);z = self.max_2d(z)
+        z = self.conv_2d_3(z);z=self.relu(z);z = self.max_2d(z)
         
         mask_feats_0 = torch.cat((mask_feats_0,z),dim=1)
         mask_feats_1 = torch.cat((mask_feats_1,z),dim=1)
