@@ -145,24 +145,6 @@ class CrossVIS(nn.Module):
 
     def forward_train(self, batched_inputs):
         assert self.training
-        
-        opticalflow=[]
-        for im in batched_inputs:
-            im1 = torch.permute(im[0]['image'],(1,2,0)).detach().cpu().numpy()
-            im1 = cv2.normalize(im1, None, 0, 255, cv2.NORM_MINMAX).astype('uint8')
-            gray1 = cv2.cvtColor(im1, cv2.COLOR_BGR2GRAY)
-            im2 = torch.permute(im[1]['image'],(1,2,0)).detach().cpu().numpy()
-            im2 = cv2.normalize(im2, None, 0, 255, cv2.NORM_MINMAX).astype('uint8')
-            gray2 = cv2.cvtColor(im2, cv2.COLOR_BGR2GRAY)
-            try:
-              z = getopticalflow(gray1,gray2)
-              z = cv2.resize(z, (640,384), interpolation = cv2.INTER_AREA)
-            except:
-              z = np.zeros((384,640))
-            opticalflow.append(z)
-            
-        opticalflow = torch.tensor(np.asarray(opticalflow)).to(device='cuda:0').float()
-        opticalflow = torch.permute(opticalflow,(0,3,1,2))
 
         original_images_0 = [
             x[0]['image'].to(self.device) for x in batched_inputs
@@ -180,6 +162,7 @@ class CrossVIS(nn.Module):
         images_norm_1 = ImageList.from_tensors(images_norm_1,
                                                self.backbone.size_divisibility)
 
+       
         features_0_origin = self.backbone(images_norm_0.tensor)
         features_1_origin = self.backbone(images_norm_1.tensor)
         features_0, features_1 = dict(), dict()
@@ -223,33 +206,45 @@ class CrossVIS(nn.Module):
                                                       gt_instances_0)
         mask_feats_1, sem_losses_1 = self.mask_branch(features_1,
                                                       gt_instances_1)
-        """
-        x = mask_feats_0.unsqueeze(2)
-        y = mask_feats_1.unsqueeze(2)
-        z = torch.cat((x,y),dim=2)
-
-        z = self.conv_3d_1(z)
-        z = self.conv_3d_2(z)
-        z = self.conv_3d_3(z)
-        z = self.conv_3d_4(z)
-        z = self.max_3d(z)
-        z = z.squeeze(2)
-        """
-        
-        
+        u = mask_feats_1.size(2)*8
+        v = mask_feats_1.size(3)*8
 
         
+        opticalflow = []
+        for im in batched_inputs:
+            im1 = torch.permute(im[0]['image'],(1,2,0)).detach().cpu().numpy()
+            im1 = cv2.normalize(im1, None, 0, 255, cv2.NORM_MINMAX).astype('uint8')
+            gray1 = cv2.cvtColor(im1, cv2.COLOR_BGR2GRAY)
+            im2 = torch.permute(im[1]['image'],(1,2,0)).detach().cpu().numpy()
+            im2 = cv2.normalize(im2, None, 0, 255, cv2.NORM_MINMAX).astype('uint8')
+            gray2 = cv2.cvtColor(im2, cv2.COLOR_BGR2GRAY)
+
+            try:
+              z = np.asarray(getopticalflow(gray1,gray2))
+              z = cv2.resize(z, (v,u), interpolation = cv2.INTER_AREA)
+            except:
+              print('$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$')
+              z = np.zeros((u,v))
+            opticalflow.append(z)
+
+        opticalflow = torch.tensor(opticalflow).to(device='cuda:0').float()
+        opticalflow = torch.permute(opticalflow,(0,3,1,2))
+
         z = self.conv_2d_1(opticalflow);z=self.relu(z);z = self.max_2d(z)
         z = self.conv_2d_2(z);z=self.relu(z);z = self.max_2d(z)
         z = self.conv_2d_3(z);z=self.relu(z);z = self.max_2d(z)
         
-      
 
         mask_feats_0 = torch.cat((mask_feats_0,z),dim=1)
         mask_feats_1 = torch.cat((mask_feats_1,z),dim=1)
+        
+
+       
 
         mask_feats_0 = self.conv_2d_5(mask_feats_0);mask_feats_0=self.relu(mask_feats_0)
         mask_feats_1 = self.conv_2d_5(mask_feats_1);mask_feats_1=self.relu(mask_feats_1)
+
+
 
 
         proposals_0, proposal_losses_0 = self.proposal_generator(
