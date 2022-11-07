@@ -92,17 +92,20 @@ class CrossVIS(nn.Module):
         self.pairwise_dilation = cfg.MODEL.BOXINST.PAIRWISE.DILATION
         self.pairwise_color_thresh = cfg.MODEL.BOXINST.PAIRWISE.COLOR_THRESH
 
+        """
         self.conv_3d_1 = nn.Conv3d(8, 16, (2,3,3),padding='same')
         self.conv_3d_2 = nn.Conv3d(16, 32, (2,3,3),padding='same')
         self.conv_3d_3 = nn.Conv3d(32, 16, (2,3,3),padding='same')
         self.conv_3d_4 = nn.Conv3d(16, 8, (2,3,3),padding='same')
         self.max_3d = nn.MaxPool3d((2, 1, 1))
-        
+        """
+
         self.conv_2d_1 = nn.Conv2d(8, 16, 3,padding='same')
         self.conv_2d_2 = nn.Conv2d(16, 32, 3,padding='same')
         self.conv_2d_3 = nn.Conv2d(32, 16, 3,padding='same')
         self.conv_2d_4 = nn.Conv2d(16, 8, 3,padding='same')
-        
+        self.conv_2d_5 = nn.Conv2d(16, 8, 3,padding='same')
+
         self.relu = nn.ReLU()
 
         # build top module
@@ -217,9 +220,11 @@ class CrossVIS(nn.Module):
         z = self.conv_2d_3(z);z=self.relu(z)
         z = self.conv_2d_4(z);z=self.relu(z)
         
-        
         mask_feats_0 = torch.cat((mask_feats_0,z),dim=1)
         mask_feats_1 = torch.cat((mask_feats_1,z),dim=1)
+
+        mask_feats_0 = self.conv_2d_5(mask_feats_0);mask_feats_0=self.relu(mask_feats_0)
+        mask_feats_1 = self.conv_2d_5(mask_feats_1);mask_feats_1=self.relu(mask_feats_1)
 
         proposals_0, proposal_losses_0 = self.proposal_generator(
             images_norm_0, features_0, gt_instances_0, self.controller)
