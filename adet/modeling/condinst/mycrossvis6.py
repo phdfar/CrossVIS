@@ -463,6 +463,7 @@ class CrossVIS(nn.Module):
             gt_instances = None
 
         mask_feats, sem_losses = self.mask_branch(features, gt_instances)
+        """
         x = mask_feats.unsqueeze(2)
         y = mask_feats_2.unsqueeze(2)
         z = torch.cat((x,y),dim=2)
@@ -474,6 +475,16 @@ class CrossVIS(nn.Module):
         z = self.max_3d(z)
         z = z.squeeze(2)
         mask_feats = mask_feats + z
+        """
+        z = mask_feats - mask_feats_2
+        z = self.conv_2d_1(z);z=self.relu(z)
+        z = self.conv_2d_2(z);z=self.relu(z)
+        z = self.conv_2d_3(z);z=self.relu(z)
+        z = self.conv_2d_4(z);z=self.relu(z)
+        
+        mask_feats = torch.cat((mask_feats,z),dim=1)
+        mask_feats = self.conv_2d_5(mask_feats);mask_feats=self.relu(mask_feats)
+        
 
 
         proposals, proposal_losses = self.proposal_generator(
