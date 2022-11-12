@@ -436,8 +436,8 @@ class CrossVIS(nn.Module):
         batched_inputs1.append(a)
         batched_inputs2.append(b)
 
-        original_images = [x.to(self.device) for x in batched_inputs2]
-        images_norm = [self.normalizer(x) for x in original_images]
+        original_images2 = [x.to(self.device) for x in batched_inputs2]
+        images_norm = [self.normalizer(x) for x in original_images2]
         images_norm = ImageList.from_tensors(images_norm,self.backbone.size_divisibility)
         features2 = self.backbone(images_norm.tensor)
         mask_feats_2, sem_losses_2 = self.mask_branch(features2,None)
@@ -484,8 +484,47 @@ class CrossVIS(nn.Module):
             gt_instances = None
 
         mask_feats, sem_losses = self.mask_branch(features, gt_instances)
-        x = mask_feats.unsqueeze(2)
-        y = mask_feats_2.unsqueeze(2)
+        #x = mask_feats.unsqueeze(2)
+        #y = mask_feats_2.unsqueeze(2)
+        
+        
+        u = mask_feats.size(2)*8
+        v = mask_feats.size(3)*8
+
+        
+        #opticalflow = []
+        #for im in batched_inputs:
+        im1 = torch.permute(original_images[0],(1,2,0)).detach().cpu().numpy()
+        im1 = cv2.normalize(im1, None, 0, 255, cv2.NORM_MINMAX).astype('uint8')
+        gray1 = cv2.cvtColor(im1, cv2.COLOR_BGR2GRAY)
+        im2 = torch.permute(original_images2[0],(1,2,0)).detach().cpu().numpy()
+        im2 = cv2.normalize(im2, None, 0, 255, cv2.NORM_MINMAX).astype('uint8')
+        gray2 = cv2.cvtColor(im2, cv2.COLOR_BGR2GRAY)
+
+        try:
+          z = np.asarray(getopticalflow(gray1,gray2))
+          z = cv2.resize(z, (v,u), interpolation = cv2.INTER_AREA)
+        except:
+          print('$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$')
+          z = np.zeros((u,v))
+        opticalflow.append(z)
+
+        opticalflow = torch.tensor(opticalflow).to(device='cuda:0').float()
+        opticalflow = torch.permute(opticalflow,(0,3,1,2))
+
+        z = self.conv_2d_1(opticalflow);z=self.relu(z);z = self.max_2d(z)
+        z = self.conv_2d_2(z);z=self.relu(z);z = self.max_2d(z)
+        z = self.conv_2d_3(z);z=self.relu(z);z = self.max_2d(z)
+        
+        mask_feats = torch.cat((mask_feats,z),dim=1)
+        #mask_feats_2 = torch.cat((mask_feats_2,z),dim=1)
+        
+        mask_feats = self.conv_2d_5(mask_feats);mask_feats=self.relu(mask_feats)
+        #mask_feats_1 = self.conv_2d_5(mask_feats_1);mask_feats_1=self.relu(mask_feats_1)
+
+
+        
+        """
         z = torch.cat((x,y),dim=2)
 
         z = self.conv_3d_1(z)
@@ -495,7 +534,7 @@ class CrossVIS(nn.Module):
         z = self.max_3d(z)
         z = z.squeeze(2)
         mask_feats = mask_feats + z
-
+        """
 
         proposals, proposal_losses = self.proposal_generator(
             images_norm, features, gt_instances, self.controller)
