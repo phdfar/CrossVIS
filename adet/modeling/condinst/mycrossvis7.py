@@ -492,7 +492,7 @@ class CrossVIS(nn.Module):
         v = mask_feats.size(3)*8
 
         
-        #opticalflow = []
+        opticalflow = []
         #for im in batched_inputs:
         im1 = torch.permute(original_images[0],(1,2,0)).detach().cpu().numpy()
         im1 = cv2.normalize(im1, None, 0, 255, cv2.NORM_MINMAX).astype('uint8')
@@ -500,7 +500,7 @@ class CrossVIS(nn.Module):
         im2 = torch.permute(original_images2[0],(1,2,0)).detach().cpu().numpy()
         im2 = cv2.normalize(im2, None, 0, 255, cv2.NORM_MINMAX).astype('uint8')
         gray2 = cv2.cvtColor(im2, cv2.COLOR_BGR2GRAY)
-
+        #opticalflow=[]
         try:
           z = np.asarray(getopticalflow(gray1,gray2))
           z = cv2.resize(z, (v,u), interpolation = cv2.INTER_AREA)
