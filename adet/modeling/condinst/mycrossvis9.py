@@ -14,7 +14,12 @@ from detectron2.structures.masks import PolygonMasks, polygons_to_bitmask
 from fvcore.nn import sigmoid_focal_loss_jit
 from skimage import color
 from torch import nn
-
+import sklearn
+import sklearn.metrics
+from sklearn import metrics
+from sklearn.cluster import KMeans
+from sklearn.metrics import mean_squared_error
+import random
 from adet.utils.comm import aligned_bilinear
 from ._lovasz import LovaszHingeLoss
 from .dynamic_mask_head import build_dynamic_mask_head
@@ -215,7 +220,9 @@ class CrossVIS(nn.Module):
             unmask[bg_mask_ptsx]=1
             unmask = unmask.unsqueeze(0)
             #masks = torch.cat((masks, unmask), 0)
-            ds = (bg_mask_ptsx[0],bg_mask_ptsx[1],bg_mask_ptsx[2])
+            #print('bg_mask_ptsx',len(bg_mask_ptsx))
+
+            ds = (bg_mask_ptsx[0],bg_mask_ptsx[1])
             nonzero_mask_ptsz = list(nonzero_mask_pts);
             nonzero_mask_ptsz.append(ds)
             nonzero_mask_ptsz = tuple(nonzero_mask_ptsz)
@@ -253,7 +260,7 @@ class CrossVIS(nn.Module):
 
 
             #center_loss_mse = F.mse_loss(d_center, torch.zeros_like(d_center), reduction='mean')
-            center_loss_lovas = center_loss_lovas + self.lovasz_hinge_loss(d_center, torch.zeros_like(d_center))
+            center_loss_lovas = center_loss_lovas + lovasz_hinge_loss(d_center, torch.zeros_like(d_center))
           except:
             print('XXXX -> error')
 
@@ -279,6 +286,7 @@ class CrossVIS(nn.Module):
           lovasz_loss_big = lovasz_loss_big + lovasz_loss
         lovasz_loss_big = lovasz_loss_big / 16
         center_loss_lovas = center_loss_lovas / 16
+        #print('center_loss_lovas',center_loss_lovas)
         return lovasz_loss_big + center_loss_lovas
 
 
@@ -423,18 +431,18 @@ class CrossVIS(nn.Module):
         xmask_feats_1 = mask_feats_0.to(torch.device('cpu'))
         xmask_feats_2 = mask_feats_1.to(torch.device('cpu'))
 
-        try:
-          loss_emd1 = self.emd_func(xmask_feats_1,gt_final)
-          loss_emd2 = self.emd_func(xmask_feats_2,gt_final)
-          lovasz_loss_big = (loss_emd1 + loss_emd2)/2
-        except:
+        #try:
+        loss_emd1 = self.emd_func(xmask_feats_1,gt_final)
+        loss_emd2 = self.emd_func(xmask_feats_2,gt_final)
+        lovasz_loss_big = (loss_emd1 + loss_emd2)/2
+        #except:
          # loss_emd1 = self.emd_func(xmask_feats_1,gt_final)
           #loss_emd2 = self.emd_func(xmask_feats_2,gt_final)
           #lovasz_loss_big = (loss_emd1 + loss_emd2)/2
 
-          print('XXXXXXXXXXXXXXXXXXXXxxx')
-          lovasz_loss_big = loss_reid/100
-          pass
+        #  print('XXXXXXXXXXXXXXXXXXXXxxx')
+        #  lovasz_loss_big = loss_reid/100
+        #  pass
 
         #print('lovasz_loss_big',lovasz_loss_big)
 
