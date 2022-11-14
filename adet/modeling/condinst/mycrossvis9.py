@@ -431,18 +431,14 @@ class CrossVIS(nn.Module):
         xmask_feats_1 = mask_feats_0.to(torch.device('cpu'))
         xmask_feats_2 = mask_feats_1.to(torch.device('cpu'))
 
-        #try:
-        loss_emd1 = self.emd_func(xmask_feats_1,gt_final)
-        loss_emd2 = self.emd_func(xmask_feats_2,gt_final)
-        lovasz_loss_big = (loss_emd1 + loss_emd2)/2
-        #except:
-         # loss_emd1 = self.emd_func(xmask_feats_1,gt_final)
-          #loss_emd2 = self.emd_func(xmask_feats_2,gt_final)
-          #lovasz_loss_big = (loss_emd1 + loss_emd2)/2
-
-        #  print('XXXXXXXXXXXXXXXXXXXXxxx')
-        #  lovasz_loss_big = loss_reid/100
-        #  pass
+        try:
+          loss_emd1 = self.emd_func(xmask_feats_1,gt_final)
+          loss_emd2 = self.emd_func(xmask_feats_2,gt_final)
+          lovasz_loss_big = (loss_emd1 + loss_emd2)/2
+        except:
+          print('XXXXXXXXXXXXXXXXXXXXxxx')
+          lovasz_loss_big = loss_reid/100
+          pass
 
         #print('lovasz_loss_big',lovasz_loss_big)
 
