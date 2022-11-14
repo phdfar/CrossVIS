@@ -179,6 +179,7 @@ class CrossVIS(nn.Module):
         lovasz_loss = 0.
         losses = {}
         lovasz_loss_big = 0.
+        center_loss_lovas = 0.
         import os
         os.environ['CUDA_LAUNCH_BLOCKING'] = "1"
         for j in range(0,16):
@@ -208,60 +209,53 @@ class CrossVIS(nn.Module):
                     ]  # list(tensor[I, E])
 
           total_instances += len(nonzero_mask_pts)
-          
           try:
-              #maskc = torch.clone(masks)
-              unmask = torch.zeros_like(masks[0])
-              bg_mask_ptsx = (masks == 0).all(0).nonzero(as_tuple=False).unbind(1)
-              unmask[bg_mask_ptsx]=1
-              unmask = unmask.unsqueeze(0)
-              #masks = torch.cat((masks, unmask), 0)
-              ds = (bg_mask_ptsx[0],bg_mask_ptsx[1],bg_mask_ptsx[2])
-              nonzero_mask_ptsz = list(nonzero_mask_pts);
-              nonzero_mask_ptsz.append(ds)
-              nonzero_mask_ptsz = tuple(nonzero_mask_ptsz)
-              
-              instance_embeddingsd = [
-                  embeddings_per_seq[nonzero_mask_ptsz[n]]
-                  for n in range(len(nonzero_mask_ptsz))
-              ]
-                        
-              instance_embeddingsz = []
-              labels_true = []
-              center=[]
-              for n in range(len(instance_embeddingsd)):
-                  emb = instance_embeddingsd[n]
-                  labels_true.append(np.zeros((len(emb),1)).astype('int')+n)
-                  emb = emb.detach().cpu().numpy()
-                  instance_embeddingsz.append(emb)
+            unmask = torch.zeros_like(masks[0])
+            bg_mask_ptsx = (masks == 0).all(0).nonzero(as_tuple=False).unbind(1)
+            unmask[bg_mask_ptsx]=1
+            unmask = unmask.unsqueeze(0)
+            #masks = torch.cat((masks, unmask), 0)
+            ds = (bg_mask_ptsx[0],bg_mask_ptsx[1],bg_mask_ptsx[2])
+            nonzero_mask_ptsz = list(nonzero_mask_pts);
+            nonzero_mask_ptsz.append(ds)
+            nonzero_mask_ptsz = tuple(nonzero_mask_ptsz)
 
-                  center.append(np.mean(emb,axis=0))
-                  
-              center = np.asarray(center)
-  
-              arr = np.vstack(instance_embeddingsz)
-              kmeans = KMeans(n_clusters=len(instance_embeddingsd), random_state=0).fit(arr)
-              labels = kmeans.labels_
-              cnp = kmeans.cluster_centers_
-              labels_true = np.vstack(labels_true).ravel()
-              
+            instance_embeddingsd = [
+              embeddings_per_seq[nonzero_mask_ptsz[n]]
+              for n in range(len(nonzero_mask_ptsz))
+            ]
 
-              gt = cnp[labels]
-              pt = center[labels_true]
+            instance_embeddingsz = []
+            labels_true = []
+            center=[]
+            for n in range(len(instance_embeddingsd)):
+              emb = instance_embeddingsd[n]
+              labels_true.append(np.zeros((len(emb),1)).astype('int')+n)
+              emb = emb.detach().cpu().numpy()
+              instance_embeddingsz.append(emb)
+
+              center.append(np.mean(emb,axis=0))
+
+            center = np.asarray(center)
+
+            arr = np.vstack(instance_embeddingsz)
+            kmeans = KMeans(n_clusters=len(instance_embeddingsd), random_state=0).fit(arr)
+            labels = kmeans.labels_
+            cnp = kmeans.cluster_centers_
+            labels_true = np.vstack(labels_true).ravel()
+
+            gt = cnp[labels]
+            pt = center[labels_true]
+
+            d_center = np.mean(np.square(np.subtract(gt,pt)),axis=1)
+            d_center = torch.from_numpy(np.asarray(d_center))
+            d_center = d_center.to(torch.device('cuda:0'))
 
 
-              d_center = np.mean(np.square(np.subtract(gt,pt)),axis=1)
-
-
-              d_center = torch.from_numpy(np.asarray(d_center))
-              d_center = d_center.to(torch.device('cuda:0'))
-
-              
-              #center_loss_mse = F.mse_loss(d_center, torch.zeros_like(d_center), reduction='mean')
-              center_loss_lovas = self.lovasz_hinge_loss(d_center, torch.zeros_like(d_center))
-            except:
-              print('XXXX -> error')
-              
+            #center_loss_mse = F.mse_loss(d_center, torch.zeros_like(d_center), reduction='mean')
+            center_loss_lovas = center_loss_lovas + self.lovasz_hinge_loss(d_center, torch.zeros_like(d_center))
+          except:
+            print('XXXX -> error')
 
           for n in range(len(nonzero_mask_pts)):
             probs_map = self.compute_prob_map(embeddings_per_seq, instance_embeddings[n])
@@ -277,12 +271,15 @@ class CrossVIS(nn.Module):
 
           if total_instances == 0:
             lovasz_loss = (embeddings_per_seq.sum()) * 0
+            center_loss_lovas = center_loss_lovas.sum() * 0
+
           else:
               # compute weighted sum of lovasz and variance losses based on number of instances per batch sample
               lovasz_loss = lovasz_loss / total_instances
           lovasz_loss_big = lovasz_loss_big + lovasz_loss
         lovasz_loss_big = lovasz_loss_big / 16
-        return lovasz_loss_big
+        center_loss_lovas = center_loss_lovas / 16
+        return lovasz_loss_big + center_loss_lovas
 
 
     def forward_train(self, batched_inputs):
