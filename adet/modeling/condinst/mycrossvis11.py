@@ -1,4 +1,5 @@
 
+
 import logging
 import math
 import random
@@ -188,6 +189,7 @@ class CrossVIS(nn.Module):
         losses = {}
         lovasz_loss_big = 0.
         center_loss_lovas = 0.
+        sl_loss=0.
         import os
         os.environ['CUDA_LAUNCH_BLOCKING'] = "1"
         for j in range(0,16):
@@ -294,17 +296,26 @@ class CrossVIS(nn.Module):
           random.Random(1337).shuffle(Xtrain)
           random.Random(1337).shuffle(Ytrain)
         
-          sl_loss = 0.
+          sl_loss1 = 0.;sl_loss2=0.
           try:
-              sl_loss1 = sklearn.metrics.silhouette_score(Xtrain,Ytrain.ravel())
-              sl_loss2 = sklearn.metrics.silhouette_score(Xtest,Ytest.ravel())
-              sl_loss = (sl_loss1 + sl_loss2)/2
+            #print(Ytest.ravel())
+            sl_loss1 = sklearn.metrics.silhouette_score(Xtrain,Ytrain.ravel())
           except:
-              print('yyy')
+            pass
+          try:
+            #print(Ytest.ravel())
+            sl_loss2 = sklearn.metrics.silhouette_score(Xtest,Ytest.ravel())
+          except:
+            pass
+
+          sl_loss =  sl_loss +  (sl_loss1 + sl_loss2)/2
+
 
           if total_instances == 0:            
             center_loss_lovas = center_loss_lovas.sum() * 0
-
+        #print('center_loss_lovas',center_loss_lovas)
+        #print('sl_loss',sl_loss)
+        sl_loss = sl_loss / 16
         center_loss_lovas = (center_loss_lovas / 16) * (1+(1-sl_loss))
         return center_loss_lovas
 
