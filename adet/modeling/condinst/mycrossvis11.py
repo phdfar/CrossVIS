@@ -19,13 +19,16 @@ import sklearn.metrics
 from sklearn import metrics
 from sklearn.cluster import KMeans
 from sklearn.metrics import mean_squared_error
-import random
 from adet.utils.comm import aligned_bilinear
 from ._lovasz import LovaszHingeLoss
 from .dynamic_mask_head import build_dynamic_mask_head
 from .mask_branch import build_mask_branch
 #from .embeddingloss import build_emd
 import numpy as np
+import sklearn
+import sklearn.metrics
+
+
 
 __all__ = ['CrossVIS']
 
@@ -263,30 +266,46 @@ class CrossVIS(nn.Module):
             center_loss_lovas = center_loss_lovas + lovasz_hinge_loss(d_center, torch.zeros_like(d_center))
           except:
             print('XXXX -> error')
-          """
-          for n in range(len(nonzero_mask_pts)):
-            probs_map = self.compute_prob_map(embeddings_per_seq, instance_embeddings[n])
-            logits_map = (probs_map * 2.) - 1.
-            instance_target = masks[n].flatten()
-
-            if instance_target.sum(dtype=torch.long) == 0:
-              continue
             
-            g = lovasz_hinge_loss(logits_map.flatten(), instance_target)
-            if torch.isnan(g)==False:
-              lovasz_loss = lovasz_loss + g
-          """
-          if total_instances == 0:
-            #lovasz_loss = (embeddings_per_seq.sum()) * 0
+          #instance_embeddingsx = instance_embeddings.detach().cpu()
+          Xtrain=[];Ytrain=[];Xtest=[];Ytest=[];
+          for n in range(len(instance_embeddings)):
+              ln = len(instance_embeddings[n])
+              index = random.sample(range(1, ln), int(0.40*ln))
+              idx_train = index[:len(index)//2]
+              idx_test = index[len(index)//2:]
+              if n == 0:
+                  Xtrain = instance_embeddings[n][idx_train]
+                  Xtrain = Xtrain.detach().cpu()
+                  Ytrain = np.zeros((len(Xtrain),1))+n+1
+                  Xtest = instance_embeddings[n][idx_test]
+                  Xtest = Xtest.detach().cpu()
+                  Ytest = np.zeros((len(Xtest),1))+n+1
+              else:
+                  new = instance_embeddings[n][idx_train]
+                  new = new.detach().cpu()
+                  Xtrain = np.concatenate((Xtrain,new))
+                  Ytrain = np.concatenate((Ytrain,np.zeros((len(new),1))+n+1))
+                  new = instance_embeddings[n][idx_test]
+                  new = new.detach().cpu()
+                  Xtest = np.concatenate((Xtest,new))
+                  Ytest = np.concatenate((Ytest, np.zeros((len(new),1))+n+1))
+        
+          random.Random(1337).shuffle(Xtrain)
+          random.Random(1337).shuffle(Ytrain)
+        
+          sl_loss = 0.
+          try:
+              sl_loss1 = sklearn.metrics.silhouette_score(Xtrain,Ytrain.ravel())
+              sl_loss2 = sklearn.metrics.silhouette_score(Xtest,Ytest.ravel())
+              sl_loss = (sl_loss1 + sl_loss2)/2
+          except:
+              print('yyy')
+
+          if total_instances == 0:            
             center_loss_lovas = center_loss_lovas.sum() * 0
 
-          #else:
-              # compute weighted sum of lovasz and variance losses based on number of instances per batch sample
-              #lovasz_loss = lovasz_loss / total_instances
-          #lovasz_loss_big = lovasz_loss_big + lovasz_loss
-        #lovasz_loss_big = lovasz_loss_big / 16
-        center_loss_lovas = center_loss_lovas / 16
-        #print('center_loss_lovas',center_loss_lovas)
+        center_loss_lovas = (center_loss_lovas / 16) * (1+(1-sl_loss))
         return center_loss_lovas
 
 
