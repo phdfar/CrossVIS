@@ -86,7 +86,7 @@ class Trainer(DefaultTrainer):
                 self.before_step()
                 self.run_step()
                 self.after_step()
-                if self.iter%5==0:
+                if self.iter>0 and self.iter%5==0:
                     print('start online test')
                     #os.system('python test_vis.py --config-file configs/CrossVIS/R_50_1x.yaml --json-file datasets/youtubevis/annotations/valid.json --opts MODEL.WEIGHTS /content/CrossVIS/model_0000004.pth')
                     os.system('python /kaggle/working/CrossVIS/test_vis.py --config-file /kaggle/working/CrossVIS/configs/CrossVIS/R_50_1x.yaml --json-file /kaggle/working/CrossVIS/datasets/youtubevis/annotations/valid.json --opts MODEL.WEIGHTS /kaggle/working/CrossVIS/output/CrossVIS_R_50_1x/model_0000004.pth')
