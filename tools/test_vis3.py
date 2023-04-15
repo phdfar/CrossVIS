@@ -15,7 +15,7 @@ from tqdm import tqdm
 
 from adet.checkpoint import AdetCheckpointer
 from adet.config import get_cfg
-
+import time
 
 class StaticImageDemo:
     def __init__(
@@ -242,3 +242,4 @@ if __name__ == '__main__':
                 objs['segmentations'].append(mask_)
             results.append(objs)
     json.dump(results, open('results.json', 'w'))
+    time.sleep(5)
