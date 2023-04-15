@@ -72,7 +72,7 @@ def setup(args):
     if args.config_file:
         cfg.merge_from_file(args.config_file)
     cfg.merge_from_list(args.opts)
-    cfg.MODEL.DEVICE = 'cpu'
+    cfg.MODEL.DEVICE = 'cuda:1'
     cfg.freeze()
     return cfg
 
