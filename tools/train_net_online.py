@@ -99,7 +99,7 @@ class Trainer(DefaultTrainer):
         Returns:
             OrderedDict of results, if evaluation is enabled. Otherwise None.
         """
-        with open('test_online.obj', 'wb') as fp:
+        with open('/kaggle/working/CrossVIS/test_online.obj', 'wb') as fp:
           pickle.dump({}, fp)
   
         self.train_loop(self.start_iter, self.max_iter)
