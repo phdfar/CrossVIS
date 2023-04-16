@@ -107,11 +107,11 @@ with open('/kaggle/working/CrossVIS/test_online.obj', 'rb') as fp:
 names = list(pthdict.keys())
 if names!=[]:
   for l in ls:
-    sp = ls.split('/');sp=sp[-1]
+    sp = l.split('/');sp=sp[-1]
     if sp not in names:
       torun = sp
 else:
-  torun = ls[0]
+  sp = ls[0].split('/');torun=sp[-1]
 
 os.system('python /kaggle/working/CrossVIS/test_vis.py --config-file /kaggle/working/CrossVIS/configs/CrossVIS/R_50_1x.yaml --json-file /kaggle/working/CrossVIS/datasets/youtubevis/annotations/valid.json --opts MODEL.WEIGHTS /kaggle/working/CrossVIS/output/CrossVIS_R_50_1x/'+torun)
 time.sleep(2)
