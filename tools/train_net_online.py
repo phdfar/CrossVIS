@@ -39,7 +39,7 @@ from adet.data.dataset_mapper import (DatasetMapperWithBasis,
                                       VideoDatasetMapperWithBasis)
 from adet.data.fcpose_dataset_mapper import FCPoseDatasetMapper
 from adet.evaluation import TextEvaluator
-
+import pickle
 
 class Trainer(DefaultTrainer):
     """This is the same Trainer except that we rewrite the
@@ -89,7 +89,8 @@ class Trainer(DefaultTrainer):
                 if self.iter>0 and self.iter%50==0:
                     print('start online test')
                     #os.system('python test_vis.py --config-file configs/CrossVIS/R_50_1x.yaml --json-file datasets/youtubevis/annotations/valid.json --opts MODEL.WEIGHTS /content/CrossVIS/model_0000004.pth')
-                    os.system('python /kaggle/working/CrossVIS/test_vis.py --config-file /kaggle/working/CrossVIS/configs/CrossVIS/R_50_1x.yaml --json-file /kaggle/working/CrossVIS/datasets/youtubevis/annotations/valid.json --opts MODEL.WEIGHTS /kaggle/working/CrossVIS/output/CrossVIS_R_50_1x/model_0000049.pth')
+                    #os.system('python /kaggle/working/CrossVIS/test_vis.py --config-file /kaggle/working/CrossVIS/configs/CrossVIS/R_50_1x.yaml --json-file /kaggle/working/CrossVIS/datasets/youtubevis/annotations/valid.json --opts MODEL.WEIGHTS /kaggle/working/CrossVIS/output/CrossVIS_R_50_1x/model_0000049.pth')
+                    os.system('python /kaggle/working/CrossVIS/test_online.py')
             self.after_train()
 
     def train(self):
@@ -98,6 +99,9 @@ class Trainer(DefaultTrainer):
         Returns:
             OrderedDict of results, if evaluation is enabled. Otherwise None.
         """
+        with open('test_online.obj', 'wb') as fp:
+          pickle.dump({}, fp)
+  
         self.train_loop(self.start_iter, self.max_iter)
         if hasattr(self, '_last_eval_results') and comm.is_main_process():
             verify_results(self.cfg, self._last_eval_results)
