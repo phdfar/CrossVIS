@@ -182,6 +182,8 @@ pthdict.update({torun:[a,b,c]})
 with open('/kaggle/working/CrossVIS/test_online.obj', 'wb') as fp:
   pickle.dump(pthdict, fp)
 
+for r in pthdict:
+    print(r,pthdict[r])
 print('#######################################')
 print('############### END Comparison ############')
 time.sleep(2)
