@@ -161,8 +161,8 @@ class CrossVIS(nn.Module):
             myfeatures_0_origin = self.mybackbone(images_unnorm_0.tensor.float())
             myfeatures_1_origin = self.mybackbone(images_unnorm_1.tensor.float())
             
-        for k in myfeatures_0_origin:
-            print(k.size())
+        #for k in myfeatures_0_origin:
+        #    print(k.size())
         #print(asd)
             
         features_0_origin = self.backbone(images_norm_0.tensor)
