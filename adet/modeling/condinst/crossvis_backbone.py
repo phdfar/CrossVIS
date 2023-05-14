@@ -18,6 +18,7 @@ from adet.utils.comm import aligned_bilinear
 
 from .dynamic_mask_head import build_dynamic_mask_head
 from .mask_branch import build_mask_branch
+from .Backbone import mybackbone
 
 __all__ = ['CrossVIS']
 
@@ -75,6 +76,8 @@ class CrossVIS(nn.Module):
         self.device = torch.device(cfg.MODEL.DEVICE)
 
         self.backbone = build_backbone(cfg)
+        self.mybackbone=mybackbone.load(self.device)
+        
         self.proposal_generator = build_proposal_generator(
             cfg, self.backbone.output_shape())
         self.mask_head = build_dynamic_mask_head(cfg)
@@ -143,6 +146,25 @@ class CrossVIS(nn.Module):
         images_norm_1 = ImageList.from_tensors(images_norm_1,
                                                self.backbone.size_divisibility)
 
+        
+        images_unnorm_0 = [x for x in original_images_0]
+        images_unnorm_0 = ImageList.from_tensors(images_unnorm_0,
+                                               self.backbone.size_divisibility)
+
+        images_unnorm_1 = [x for x in original_images_1]
+        images_unnorm_1 = ImageList.from_tensors(images_unnorm_1,
+                                               self.backbone.size_divisibility)
+        
+        print('images_unnorm_0.tensor',images_unnorm_0.tensor.size())
+        
+        with torch.no_grad():
+            myfeatures_0_origin = self.mybackbone(images_unnorm_0.tensor.float())
+            myfeatures_1_origin = self.mybackbone(images_unnorm_1.tensor.float())
+            
+        for k in myfeatures_0_origin:
+            print(k,myfeatures_0_origin[k].size)
+        print(asd)
+            
         features_0_origin = self.backbone(images_norm_0.tensor)
         features_1_origin = self.backbone(images_norm_1.tensor)
         features_0, features_1 = dict(), dict()
