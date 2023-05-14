@@ -28,6 +28,8 @@ class MaskBranch(nn.Module):
         self.out_stride = input_shape[self.in_features[0]].stride
 
         feature_channels = {k: v.channels for k, v in input_shape.items()}
+        
+        #feature_channels={'p3': 512, 'p4': 512, 'p5': 512, 'p6': 512, 'p7': 512}
 
         conv_block = conv_with_kaiming_uniform(norm, activation=True)
 

@@ -114,6 +114,7 @@ class CrossVIS(nn.Module):
         torch.nn.init.constant_(self.cls.bias, bias_value)
 
         self.emb_scale = math.sqrt(2) * math.log(self.nID - 1)
+        self.convff=nn.Conv2d(512, 256, 1)
 
         pixel_mean = torch.Tensor(cfg.MODEL.PIXEL_MEAN).to(self.device).view(
             3, 1, 1)
@@ -155,20 +156,20 @@ class CrossVIS(nn.Module):
         images_unnorm_1 = ImageList.from_tensors(images_unnorm_1,
                                                self.backbone.size_divisibility)
         
-        print('images_unnorm_0.tensor',images_unnorm_0.tensor.size())
+        #print('images_unnorm_0.tensor',images_unnorm_0.tensor.size())
         
         with torch.no_grad():
             myfeatures_0_origin = self.mybackbone(images_unnorm_0.tensor.float())
             myfeatures_1_origin = self.mybackbone(images_unnorm_1.tensor.float())
             
-        for k in myfeatures_0_origin:
-            print(k.size())
+        #for k in myfeatures_0_origin:
+        #    print(k.size())
         #print(asd)
             
         features_0_origin = self.backbone(images_norm_0.tensor)
         features_1_origin = self.backbone(images_norm_1.tensor)
 
-        features_0, features_1 = dict(), dict()
+        features_0, features_1 , ppfeatures_0,ppfeatures_1= dict(), dict(),dict(), dict()
         # backbone lr 0.1x
         p=0;
         for k in features_0_origin.keys():
@@ -178,13 +179,19 @@ class CrossVIS(nn.Module):
                 k].detach() * 0.9
 
             if p<=2:
-              print('############',k,features_0[k].size(),myfeatures_0_origin[p+1].size())
-              features_0[k] = features_0[k] + myfeatures_0_origin[p+1]
-              features_1[k] = features_1[k] + myfeatures_1_origin[p+1]
+              #print('############',k,features_0[k].size(),myfeatures_0_origin[p+1].size())
+              #features_0[k] = features_0[k] + myfeatures_0_origin[p+1]
+              #features_1[k] = features_1[k] + myfeatures_1_origin[p+1]
+
+              features_0[k] = torch.cat((features_0[k], myfeatures_0_origin[p+1]), dim=1)
+              features_1[k] = torch.cat((features_1[k], myfeatures_1_origin[p+1]), dim=1)
+
+              features_0[k]=self.convff(features_0[k])
+              features_1[k]=self.convff(features_1[k])
 
             p=p+1;
 
-        print(asd)
+        #print(asd)
 
         if 'instances' in batched_inputs[0][0]:
             gt_instances_0 = [
