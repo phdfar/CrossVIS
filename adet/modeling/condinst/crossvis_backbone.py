@@ -155,7 +155,7 @@ class CrossVIS(nn.Module):
         images_unnorm_1 = ImageList.from_tensors(images_unnorm_1,
                                                self.backbone.size_divisibility)
         
-        print('images_unnorm_0.tensor',images_unnorm_0.tensor.size())
+        #print('images_unnorm_0.tensor',images_unnorm_0.tensor.size())
         
         with torch.no_grad():
             myfeatures_0_origin = self.mybackbone(images_unnorm_0.tensor.float())
@@ -178,13 +178,11 @@ class CrossVIS(nn.Module):
                 k].detach() * 0.9
 
             if p<=2:
-              print('############',k,features_0[k].size(),myfeatures_0_origin[p+1].size())
+              #print('############',k,features_0[k].size(),myfeatures_0_origin[p+1].size())
               features_0[k] = features_0[k] + myfeatures_0_origin[p+1]
               features_1[k] = features_1[k] + myfeatures_1_origin[p+1]
 
             p=p+1;
-
-        print(asd)
 
         if 'instances' in batched_inputs[0][0]:
             gt_instances_0 = [
