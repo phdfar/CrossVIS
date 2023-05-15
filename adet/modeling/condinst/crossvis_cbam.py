@@ -18,7 +18,7 @@ from adet.utils.comm import aligned_bilinear
 
 from .dynamic_mask_head import build_dynamic_mask_head
 from .mask_branch import build_mask_branch
-from cbam import *
+from .cbam import *
 
 __all__ = ['CrossVIS']
 
@@ -151,7 +151,7 @@ class CrossVIS(nn.Module):
         features_1_origin = self.backbone(images_norm_1.tensor)
         
         def todo(z,scale):
-            MC = scale.unsqueze(2).unsqueeze(3).expand_as(z)
+            MC = scale.unsqueeze(2).unsqueeze(3).expand_as(z)
             return z * MC
 
         features_0, features_1 = dict(), dict()
@@ -164,8 +164,8 @@ class CrossVIS(nn.Module):
                 k].detach() * 0.9
             
             if qq==0:
-                features_0[k],scale0 = mycbam(features_0[k])
-                features_1[k],scale1 = mycbam(features_1[k])
+                features_0[k],scale0 = self.mycbam(features_0[k])
+                features_1[k],scale1 = self.mycbam(features_1[k])
             else:
                 features_0[k]=todo(features_0[k],scale0)
                 features_1[k]=todo(features_1[k],scale1)
