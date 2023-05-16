@@ -416,11 +416,11 @@ class CrossVIS(nn.Module):
         
         features = self.backbone(images_norm.tensor)
         
-         for k in features.keys():
+        p=0;
+        for k in features.keys():
             if p<=2:
-              #print('############',k,features_0[k].size(),myfeatures_0_origin[p+1].size())
-              features[k] = features[k] + myfeatures_1_origin[p+1]
-                
+                features[k] = features[k] + myfeatures_1_origin[p+1]
+            p+=1    
 
         if 'instances' in batched_inputs[0]:
             gt_instances = [
