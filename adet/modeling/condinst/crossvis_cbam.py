@@ -394,6 +394,18 @@ class CrossVIS(nn.Module):
 
         features = self.backbone(images_norm.tensor)
 
+        def todo(z,scale):
+            MC = scale.unsqueeze(2).unsqueeze(3).expand_as(z)
+            return z * MC
+
+        qq=0;
+        for k in features.keys():
+            if qq==0:
+                features[k],scale0 = self.mycbam(features[k])
+            else:
+                features[k]=todo(features[k],scale0)
+            qq+=1;
+            
         if 'instances' in batched_inputs[0]:
             gt_instances = [
                 x['instances'].to(self.device) for x in batched_inputs
