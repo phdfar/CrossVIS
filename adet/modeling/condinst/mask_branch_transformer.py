@@ -132,9 +132,7 @@ class MaskBranch(nn.Module):
         """
         z = self.conv_blockz(features['p3'])
         x = self.transformer_layer(z)
-        
-        print('x',x.size())
-        
+                
         mask_feats = self.tower(x)
 
         if self.num_outputs == 0:
