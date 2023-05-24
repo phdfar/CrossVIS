@@ -17,7 +17,7 @@ def build_mask_branch(cfg, input_shape):
 
 
 class SpatialTransformerEncoder(nn.Module):
-    def __init__(self, d_model=256, nhead=4, num_layers=3):
+    def __init__(self, d_model=256, nhead=4, num_layers=3,h=48, w=80):
         super(SpatialTransformerEncoder, self).__init__()
 
         # Define the positional encoding for the spatial dimensions
@@ -73,7 +73,7 @@ class MaskBranch(nn.Module):
         #channels = channels//2
 
         #channels = 256
-        self.transformer_layer = SpatialTransformerEncoder(d_model=channels, nhead=8, num_layers=3).to(device)
+        #self.transformer_layer = SpatialTransformerEncoder(d_model=channels, nhead=8, num_layers=3).to(device)
 
 
         feature_channels = {k: v.channels for k, v in input_shape.items()}
@@ -130,8 +130,13 @@ class MaskBranch(nn.Module):
                 x_p = aligned_bilinear(x_p, factor_h)
                 x = x + x_p
         """
+        
+        device = torch.device('cuda')
+        target_h, target_w = features['p3'].size()[2:]
+        encoder = SpatialTransformerEncoder(d_model=channels, nhead=8, num_layers=3,h=target_h,w=target_w).to(device)
+        
         z = self.conv_blockz(features['p3'])
-        x = self.transformer_layer(z)
+        x = encoder(z)
                 
         mask_feats = self.tower(x)
 
