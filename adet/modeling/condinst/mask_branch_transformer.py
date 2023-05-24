@@ -133,7 +133,7 @@ class MaskBranch(nn.Module):
         
         device = torch.device('cuda')
         target_h, target_w = features['p3'].size()[2:]
-        encoder = SpatialTransformerEncoder(d_model=channels, nhead=8, num_layers=3,h=target_h,w=target_w).to(device)
+        encoder = SpatialTransformerEncoder(d_model=128, nhead=8, num_layers=3,h=target_h,w=target_w).to(device)
         
         z = self.conv_blockz(features['p3'])
         x = encoder(z)
