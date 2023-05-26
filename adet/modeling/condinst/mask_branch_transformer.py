@@ -137,7 +137,10 @@ class MaskBranch(nn.Module):
         if height != 48 or width != 80:
             input_tensor = torch.nn.functional.interpolate(input_tensor, size=(48, 80), mode='bilinear', align_corners=False)
             x = self.transformer_layer(input_tensor)
-            x = torch.nn.functional.interpolate(x, size=(height, width), mode='bilinear', align_corners=False)
+            try:
+              x = torch.nn.functional.interpolate(x, size=(height, width), mode='bilinear', align_corners=False)
+            except:
+              x = torch.nn.functional.interpolate(x.unsqueeze(0), size=(height, width), mode='bilinear', align_corners=False)
 
         else:
             #print('input_tensor',input_tensor.size())
