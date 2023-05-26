@@ -140,9 +140,9 @@ class MaskBranch(nn.Module):
             x = torch.nn.functional.interpolate(x, size=(height, width), mode='bilinear', align_corners=False)
 
         else:
-            print('input_tensor',input_tensor.size())
+            #print('input_tensor',input_tensor.size())
             x = self.transformer_layer(input_tensor)
-            print('x',x.size())
+            #print('x',x.size())
 
         try:
           mask_feats = self.tower(x)
