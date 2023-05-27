@@ -115,7 +115,7 @@ class RAFTAvgBackbone(nn.Module):
         # print(f"image1: {image1.shape}\t\timage2: {image2.shape}")
         _, hidden_states = self.raft(image1, image2, iters=iters, flow_init=flow_init,
                                      upsample=upsample, feature_mode=True)
-        weights = nn.functional.softmax(self.averaging_weights[:len(hidden_states)]) \
+        weights = nn.functional.softmax(self.averaging_weights[:len(hidden_states)],dim=0) \
                 .view(-1, *[1 for i in range(len(hidden_states[0].shape))])
         hidden_states = torch.stack(hidden_states)
         # print(f"hidden_states: {hidden_states.shape}\t\tres: {weights.shape}")

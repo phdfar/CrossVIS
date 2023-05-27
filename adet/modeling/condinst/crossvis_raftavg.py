@@ -80,14 +80,14 @@ class CrossVIS(nn.Module):
         #self.backbone = build_backbone(cfg)
         self.backbone = backbone.RAFTAvgBackbone()
             
-        dd = [ShapeSpec(channels=128, height=None, width=None, stride=8),
-        ShapeSpec(channels=128, height=None, width=None, stride=16),
-        ShapeSpec(channels=128, height=None, width=None, stride=32),
-        ShapeSpec(channels=128, height=None, width=None, stride=64),
-        ShapeSpec(channels=128, height=None, width=None, stride=128)]
+        dd = {'p3':ShapeSpec(channels=128, height=None, width=None, stride=8),
+        'p4':ShapeSpec(channels=128, height=None, width=None, stride=16),
+        'p5':ShapeSpec(channels=128, height=None, width=None, stride=32),
+        'p6':ShapeSpec(channels=128, height=None, width=None, stride=64),
+        'p7':ShapeSpec(channels=128, height=None, width=None, stride=128)}
 
             
-        self.proposal_generator = build_proposal_generator(dd)
+        self.proposal_generator = build_proposal_generator(cfg,dd)
         self.mask_head = build_dynamic_mask_head(cfg)
         self.mask_branch = build_mask_branch(cfg, dd)
 
