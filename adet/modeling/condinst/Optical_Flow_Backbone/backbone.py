@@ -16,8 +16,8 @@ import torch.nn.functional as F
 
 from torch.utils.data import DataLoader
 from .core.raft import RAFT
-from . import evaluate
-from .core import datasets
+#from . import evaluate
+#from .core import datasets
 
 from torch.utils.tensorboard import SummaryWriter
 
