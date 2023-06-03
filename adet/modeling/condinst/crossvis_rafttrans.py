@@ -403,8 +403,7 @@ class CrossVIS(nn.Module):
 
         # normalize images
         images_norm = [self.normalizer(x) for x in original_images]
-        images_norm = ImageList.from_tensors(images_norm,
-                                             self.backbone.size_divisibility)
+        images_norm = ImageList.from_tensors(images_norm,32)
 
         features = self.backbone(images_norm.tensor,images_norm.tensor)
         
