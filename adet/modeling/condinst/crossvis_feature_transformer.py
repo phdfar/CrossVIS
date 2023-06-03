@@ -82,15 +82,15 @@ class CrossVIS(nn.Module):
         self.mask_branch = build_mask_branch(cfg, self.backbone.output_shape())
         
         
-        self.transformer_layerP3 = SpatialTransformerEncoderP3(d_model=channels, nhead=8, num_layers=3).to(self.device)
+        self.transformer_layerP3 = SpatialTransformerEncoderP3(d_model=256, nhead=8, num_layers=3).to(self.device)
 
-        self.transformer_layerP4 = SpatialTransformerEncoderP4(d_model=channels, nhead=8, num_layers=3).to(self.device)
+        self.transformer_layerP4 = SpatialTransformerEncoderP4(d_model=256, nhead=8, num_layers=3).to(self.device)
         
-        self.transformer_layerP5 = SpatialTransformerEncoderP5(d_model=channels, nhead=8, num_layers=3).to(self.device)
+        self.transformer_layerP5 = SpatialTransformerEncoderP5(d_model=256, nhead=8, num_layers=3).to(self.device)
         
-        self.transformer_layerP6 = SpatialTransformerEncoderP6(d_model=channels, nhead=8, num_layers=3).to(self.device)
+        self.transformer_layerP6 = SpatialTransformerEncoderP6(d_model=256, nhead=8, num_layers=3).to(self.device)
         
-        self.transformer_layerP7 = SpatialTransformerEncoderP7(d_model=channels, nhead=8, num_layers=3).to(self.device)
+        self.transformer_layerP7 = SpatialTransformerEncoderP7(d_model=256, nhead=8, num_layers=3).to(self.device)
             
         self.mask_out_stride = cfg.MODEL.CONDINST.MASK_OUT_STRIDE
 
