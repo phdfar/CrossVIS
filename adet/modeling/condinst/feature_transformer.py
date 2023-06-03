@@ -4,7 +4,7 @@ from torch import nn
 
 class SpatialTransformerEncoderP3(nn.Module):
     def __init__(self, d_model=256, nhead=4, num_layers=3):
-        super(SpatialTransformerEncoder, self).__init__()
+        super(SpatialTransformerEncoderP3, self).__init__()
 
         # Define the positional encoding for the spatial dimensions
         h, w = 48, 80  # Height and width of the input images
@@ -22,10 +22,7 @@ class SpatialTransformerEncoderP3(nn.Module):
         self.pos_enc_w = pos_enc_w
 
     def forward(self, x):
-        
-        if height != 48 or width != 80:
-            input_tensor = torch.nn.functional.interpolate(input_tensor, size=(48, 80),
-                                                           
+                                            
         batch_size, channels, height, width = x.size()
 
         # Compute the positional encodings for the spatial dimensions
@@ -50,7 +47,7 @@ class SpatialTransformerEncoderP3(nn.Module):
 
 class SpatialTransformerEncoderP4(nn.Module):
     def __init__(self, d_model=256, nhead=4, num_layers=3):
-        super(SpatialTransformerEncoder, self).__init__()
+        super(SpatialTransformerEncoderP4, self).__init__()
 
         # Define the positional encoding for the spatial dimensions
         h, w = 24, 40  # Height and width of the input images
@@ -92,7 +89,7 @@ class SpatialTransformerEncoderP4(nn.Module):
 
 class SpatialTransformerEncoderP5(nn.Module):
     def __init__(self, d_model=256, nhead=4, num_layers=3):
-        super(SpatialTransformerEncoder, self).__init__()
+        super(SpatialTransformerEncoderP5, self).__init__()
 
         # Define the positional encoding for the spatial dimensions
         h, w = 12, 20  # Height and width of the input images
@@ -133,7 +130,7 @@ class SpatialTransformerEncoderP5(nn.Module):
 
 class SpatialTransformerEncoderP6(nn.Module):
     def __init__(self, d_model=256, nhead=4, num_layers=3):
-        super(SpatialTransformerEncoder, self).__init__()
+        super(SpatialTransformerEncoderP6, self).__init__()
 
         # Define the positional encoding for the spatial dimensions
         h, w = 6, 10  # Height and width of the input images
@@ -174,7 +171,7 @@ class SpatialTransformerEncoderP6(nn.Module):
 
 class SpatialTransformerEncoderP7(nn.Module):
     def __init__(self, d_model=256, nhead=4, num_layers=3):
-        super(SpatialTransformerEncoder, self).__init__()
+        super(SpatialTransformerEncoderP7, self).__init__()
 
         # Define the positional encoding for the spatial dimensions
         h, w = 3, 5  # Height and width of the input images
