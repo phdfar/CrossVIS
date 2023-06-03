@@ -406,7 +406,15 @@ class CrossVIS(nn.Module):
         images_norm = ImageList.from_tensors(images_norm,
                                              self.backbone.size_divisibility)
 
-        features = self.backbone(images_norm.tensor)
+        features = self.backbone(images_norm.tensor,images_norm.tensor)
+        
+        p40 = torch.nn.functional.interpolate(features, size=(features.size(2)//2, features.size(3)//2), mode='bilinear', align_corners=False)
+        p50 = torch.nn.functional.interpolate(features, size=(features.size(2)//4, features.size(3)//4), mode='bilinear', align_corners=False)
+        p60 = torch.nn.functional.interpolate(features, size=(features.size(2)//8, features.size(3)//8), mode='bilinear', align_corners=False)
+        p70 = torch.nn.functional.interpolate(features, size=(features.size(2)//16, features.size(3)//16), mode='bilinear', align_corners=False)
+
+        features = {'p3':features,'p4':p40,'p5':p50,'p6':p60,'p7':p70}
+        
 
         if 'instances' in batched_inputs[0]:
             gt_instances = [
