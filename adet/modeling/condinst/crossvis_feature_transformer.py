@@ -171,14 +171,14 @@ class CrossVIS(nn.Module):
             if height != hm or width != wm:
                 feat = torch.nn.functional.interpolate(feat, size=(hm, wm), mode='bilinear', align_corners=False)
                 feat = func[key](feat)
-                if len(feat.shape) == 5:
+                if len(feat.shape) == 3:
                     feat=feat.unsqueeze(0)
                 feat = torch.nn.functional.interpolate(feat, size=(height, width), mode='bilinear', align_corners=False)
                 
             else:
                 feat = func[key](feat)
             
-            if len(feat.shape) == 5:
+            if len(feat.shape) == 3:
                 feat=feat.unsqueeze(0)
                     
             return feat
@@ -431,14 +431,14 @@ class CrossVIS(nn.Module):
             if height != hm or width != wm:
                 feat = torch.nn.functional.interpolate(feat, size=(hm, wm), mode='bilinear', align_corners=False)
                 feat = func[key](feat)
-                if len(feat.shape) == 5:
+                if len(feat.shape) == 3:
                     feat=feat.unsqueeze(0)
                 feat = torch.nn.functional.interpolate(feat, size=(height, width), mode='bilinear', align_corners=False)
                 
             else:
                 feat = func[key](feat)
             
-            if len(feat.shape) == 5:
+            if len(feat.shape) == 3:
                 feat=feat.unsqueeze(0)
                     
             return feat
