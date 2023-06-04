@@ -417,6 +417,36 @@ class CrossVIS(nn.Module):
                                              self.backbone.size_divisibility)
 
         features = self.backbone(images_norm.tensor)
+        
+        
+        def do_transformer(key,feat):
+            
+            batch_size, num_channels, height, width = feat.shape
+
+            hws={'p3':[48,80],'p4':[24,40],'p5':[12,20],'p6':[6,10],'p7':[3,5]}
+            func={'p3':self.transformer_layerP3,'p4':self.transformer_layerP4,'p5':self.transformer_layerP5,'p6':self.transformer_layerP6,'p7':self.transformer_layerP7}
+            
+            hm = hws[key][0];wm=hws[key][1]
+            
+            if height != hm or width != wm:
+                feat = torch.nn.functional.interpolate(feat, size=(hm, wm), mode='bilinear', align_corners=False)
+                feat = func[key](feat)
+                if len(feat.shape) == 5:
+                    feat=feat.unsqueeze(0)
+                feat = torch.nn.functional.interpolate(feat, size=(height, width), mode='bilinear', align_corners=False)
+                
+            else:
+                feat = func[key](feat)
+            
+            if len(feat.shape) == 5:
+                feat=feat.unsqueeze(0)
+                    
+            return feat
+          
+        for k in features.keys():
+            
+            features[k] = do_transformer(k,features[k])
+            
 
         if 'instances' in batched_inputs[0]:
             gt_instances = [
